@@ -5,3 +5,5 @@ Ongoing work to use Charlottesville and Albemarle real estate and property data 
 * homestays.Rmd -- begins to map and summarize data from homestays.R   
 * sales_alb.R -- begins to use Albemarle real estate data to understand typical home purchase prices over time
 * sales_cvl.R -- begins to use Charlottesville real estate data to understand typical home purchase prices over time
+
+Suggestions and feedback welcome!
