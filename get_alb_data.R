@@ -1,4 +1,5 @@
 # Pull data from county website
+# September 11, 2019
 
 # Albemarle County Real Estate Data
 # http://www.albemarle.org/department.asp?department=gds&relpage=3914
@@ -52,7 +53,23 @@ unzip(basename(link5), "CityView_View_OtherParcelCharacteristics.txt") # extract
 other <- read_tsv("CityView_View_OtherParcelCharacteristics.txt")
 names(other)
 
+# physical address file for coordinates
+link6 <- "http://www.albemarle.org/gds/gisdata/Addresses/GIS_Addressing_TXT.zip"
+download.file(link6, destfile = basename(link6))
+unzip(basename(link6), list = TRUE) # list files, but don't extract
+unzip(basename(link6), "GIS_Addressing.txt") # extract file to working directory
+address <- read_csv("GIS_Addressing.txt")
+names(address)
 
+
+# Virginia address file
+setwd("..")
+link7 <- "https://ftp.vgingis.com/Download/BaseMapData/TXT/VirginiaSiteAddressPoint.txt.zip"
+download.file(link7, destfile = basename(link7))
+unzip(basename(link7), list = TRUE) # list files, but don't extract
+unzip(basename(link7), "VirginiaSiteAddressPoint.txt") # extract file to working directory
+vgin <- read_csv("VirginiaSiteAddressPoint.txt")
+names(vgin)
 
 
 

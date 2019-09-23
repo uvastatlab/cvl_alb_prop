@@ -1,0 +1,93 @@
+---
+title: "Homestay Policy"
+author: "Michele Claibourn"
+date: "9/21/2019"
+output: 
+  html_document:
+    theme: spacelab
+    highlight: tango
+    toc: true
+    toc_depth: 2
+---
+
+```{r, echo=FALSE}
+htmltools::img(src = knitr::image_uri(file.path(getwd(), "image", "big-compass.png")), 
+               alt = 'commpas', 
+               style = 'position:absolute; top:0; right:0; padding:20px; height:225px')
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+```{r}
+# Load libraries
+library(tidyverse)
+library(scales)
+library(leaflet)
+
+# Load data
+propres <- readRDS("albemarle_resid.rds")
+prophs <- readRDS("albemalre_hsqual.rds")
+prophsgeo <- readRDS("albemarle_hsqual_geo.rds")
+```
+
+## Identifying Homestay eligible properties
+To identify owner-occupied residential properties that meet the criteria outlined in the Homestay policy, we
+
+1. Joined the parcel information (address, owner address, lot size, total alue), card level information (use code, bedrooms), and parcel characteristics data (zoning) by parcel id.
+2. Filtered properties by card type (residential) and use code (a vector of responses -- these should be checked), and generated an indicator of owner occupancy (property address and owner address match). This generates the population of owner-occupied residential properties.
+3. Filtered this further to create a set of [homestay qualified properties](http://www.albemarle.org/department.asp?department=cdd&relpage=22028) by selecting properties in areas zoned residential or rural (based on primary zoning, these should be checked) that were single-family detached dwellings (based on house style, these should be checked). 
+   * For residentially zoned properties and rural properties on less than 5 acres, those with 3 or more bedrooms (it's not clear how to identify 2 or more guest bedrooms, so this will overstate eligibility)
+   * For rural properties on 5 or more acres, those with 6 or more bedrooms (same challenge on the guest bedroom count)
+4. With a dataset of (imperfectly) identified eligible properties, we added longitude and latitude by matching addresses to the VGIN address point file from the VGIN [Virginia GIS Clearinghouse](https://vgin.maps.arcgis.com/home/index.html) (possibly there's a better way). This file is used to generate the maps below.
+5. In the full population of owner-occupied residential properties, we added an indicator for whether the property meets the conditions outlined in the Homestay policy to generate some comparisons between homestay eligible and non-eligible properties.
+
+## Mapping homestay eligible properties
+There are `r nrow(prophs)` properties that could meet the homestay conditions in Albemarle county. These are mapped below.
+
+```{r}
+# b. map
+leaflet(prophsgeo) %>%
+  addProviderTiles("CartoDB.Positron") %>% # Add default OpenStreetMap map tiles
+  addCircleMarkers(lng = ~LONG, lat = ~LAT,
+                   radius = 3, fillOpacity = 0.5)
+# needs work 
+```
+
+Because so many properties could qualify, they're hard to see on the map. For fun, here's a version that clusters them to provide counts (the clusters will separate into smaller clusters and individual properties as one clicks on a circle or zooms in).
+
+```{r}
+leaflet(prophsgeo) %>%
+  addProviderTiles("CartoDB.Positron") %>% # Add default OpenStreetMap map tiles
+  addMarkers(lng = ~LONG, lat = ~LAT,
+             clusterOptions = markerClusterOptions())
+```
+
+
+## Comparing Homestay eligible and non-eligible properties
+
+Of the 47,754 parcels in Albemarle county, only `r nrow(propres)` were retained as owner-occupied residential properties^[Again, this needs validation -- the use codes are a bit murky.]. Of these, `r nrow(prophs)` met the conditions as interpreted here^[Also again, this needs validation -- the single family detached homes weren't entirely clear cut and the inability to distinguish bedrooms as guest bedrooms requires a choice on what the appropriate cutoff should be for this purpose.].
+
+With these caveats in mind, by this metric, 64% of the owner-occupied residential properties in Albemarle could be eligible for homestay approval.
+
+The distribution of (logged) assessed values for homestay eligible and non-eligible owner-occupied residential properties is shown below.
+```{r}
+# Generate summary statistics (e.g., mean/median/distribution of assessments as proxy for wealth) among homestay qualified/not
+propres %>% 
+  ggplot(aes(x = log(TotalValue), group = as.factor(hsqual),
+             color = as.factor(hsqual))) + geom_density() +
+  scale_color_discrete(name = "Homestay Eligible", labels = c("No", "Yes")) +
+  labs(title = "Distribution of Assessed Total Value",
+  subtitle = "Homestay eligible vs. non-eligible properties",
+  x = "(Logged) Total Value", y = "Proportion of Properties at Assessed Value")
+```
+
+Homestay eligible properties have slightly higher assessed values, but not by a great deal.
+
+## Possible Steps
+
+This is a quick exploration. Multiple decision points (how to identify single family detached properties, how to handle multiple structures per parcel, how to assess number of guest bedrooms, etc.) need review and conversation. With those elements more firmly understood and agreed upon, one could imagine looking at characteristics like 
+
+* the proportion eligible by census tract (or other level of aggregation);
+* how that compares (if census tract) to median incomes by tract, or population composition by tract.
